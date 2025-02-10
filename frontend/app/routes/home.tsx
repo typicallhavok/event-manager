@@ -39,6 +39,11 @@ const IndexPage = () => {
             CONNECT HERE
           </button>
         </Link>
+        <Link to="/feed">
+          <button className="mx-5 w-full sm:w-auto border border-purple-600 text-white/90 px-8 sm:px-12 py-4 sm:py-5 rounded-full text-xl sm:text-2xl font-semibold hover:opacity-90 transition-opacity">
+            View Events
+          </button>
+        </Link>
       </div>
 
       <div className="absolute inset-0 pointer-events-none">
