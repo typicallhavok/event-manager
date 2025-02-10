@@ -15,17 +15,15 @@ const Navbar = () => {
     <nav className="bg-[rgb(18,11,26)] border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left section - Brand */}
           <div className="flex-shrink-0">
             <Link to="/" className="text-white font-bold text-xl">
               Event Manager
             </Link>
           </div>
 
-          {/* Middle section - Navigation */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
-              to="/events"
+              to="/feed"
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Events
@@ -40,7 +38,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Right section - Auth */}
           <div className="flex items-center">
             {user ? (
               <button

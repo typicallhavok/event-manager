@@ -6,7 +6,6 @@ const IndexPage = () => {
     <div className="min-h-screen bg-black flex flex-col relative overflow-hidden p-4 sm:p-8">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-950/90 to-black pointer-events-none"></div>
 
-      {/* Header */}
       <div className="absolute top-4 sm:top-8 left-4 sm:left-8 z-20">
         <div className="flex items-center gap-2">
           <div className="text-pink-500 text-2xl sm:text-3xl font-bold">
@@ -16,7 +15,6 @@ const IndexPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="z-10 max-w-3xl mx-auto sm:mx-4 sm:ml-64 mt-48 sm:mt-60 text-center sm:text-left">
         <h1 className="text-5xl sm:text-[9rem] font-bold tracking-wide">
           <span className="text-white/90 inline-block relative glow">
@@ -29,7 +27,6 @@ const IndexPage = () => {
           </span>
         </h1>
         
-        {/* Mobile-only description */}
         <p className="block sm:hidden text-white/75 text-sm mb-4 px-4 leading-relaxed">
           Join us to create, manage, and participate in events that bring people together. 
           Experience seamless event planning and collaboration.

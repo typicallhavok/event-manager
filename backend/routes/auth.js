@@ -88,7 +88,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Remember me routes
 router.post('/remember-me', (req, res) => {
   const { email } = req.body;
   if (!email) {
@@ -118,7 +117,6 @@ router.get('/check-remember-me', (req, res) => {
   }
 });
 
-// Logout route
 router.post('/logout', verifyToken, (req, res) => {
   const clearCookieOptions = {
     ...cookieOptions,
@@ -132,7 +130,6 @@ router.post('/logout', verifyToken, (req, res) => {
   res.json({ message: 'Logged out successfully', auth: null });
 });
 
-// Profile route
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
@@ -145,7 +142,6 @@ router.get('/profile', verifyToken, async (req, res) => {
   }
 });
 
-// Verify auth route
 router.get('/verify-auth', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');

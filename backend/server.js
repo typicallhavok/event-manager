@@ -46,7 +46,6 @@ app.use(cors({
   exposedHeaders: ['set-cookie']
 }));
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -55,19 +54,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling for Socket.IO
 io.engine.on("connection_error", (err) => {
   console.log('Socket.IO connection error:', err);
 });
 
-// Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
 
   socket.on('joinEvent', async (eventId) => {
     try {
       socket.join(`event:${eventId}`);
-      console.log(`Client ${socket.id} joined event: ${eventId}`);
 
       const event = await Event.findById(eventId);
       if (event) {
@@ -83,7 +78,6 @@ io.on('connection', (socket) => {
 
   socket.on('leaveEvent', (eventId) => {
     socket.leave(`event:${eventId}`);
-    console.log(`Client ${socket.id} left event: ${eventId}`);
   });
 
   socket.on('disconnect', () => {
@@ -91,7 +85,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 

@@ -5,7 +5,6 @@ const verifyToken = require('../middleware/auth');
 
 router.post('/create', verifyToken, async (req, res) => {
   try {
-    // Validate required fields
     const requiredFields = ['name', 'description', 'date', 'time', 'venue'];
     for (const field of requiredFields) {
       if (!req.body[field]) {
@@ -13,36 +12,49 @@ router.post('/create', verifyToken, async (req, res) => {
       }
     }
 
-    // Format the event data
     const eventData = {
       ...req.body,
       createdBy: req.user.userId,
       date: new Date(req.body.date),
       status: req.body.status || 'draft',
-      attendees: [],
-      images: req.body.images || [],
-      speakers: req.body.speakers || []
+      updatedAt: Date.now()
     };
 
-    // Validate time format
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(eventData.time.from) || !timeRegex.test(eventData.time.to)) {
       return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
     }
 
-    // Create and save the event
-    const event = new Event(eventData);
-    await event.save();
+    const query = req.body._id ? 
+      { _id: req.body._id, createdBy: req.user.userId } : 
+      { name: req.body.name };
 
-    // Emit socket event for real-time updates
+    const event = await Event.findOneAndUpdate(
+      query,
+      eventData,
+      { 
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true
+      }
+    );
+
     const io = req.app.get('io');
-    io.emit('eventCreated', {
-      eventId: event._id,
-      name: event.name
-    });
-    console.log('Event created:', event.name);
+    if (req.body._id) {
+      io.emit('eventUpdated', {
+        eventId: event._id,
+        updates: eventData
+      });
+    } else {
+      io.emit('eventCreated', {
+        eventId: event._id,
+        name: event.name
+      });
+    }
+
     res.status(201).json({
-      message: 'Event created successfully',
+      message: req.body._id ? 'Event updated successfully' : 'Event created successfully',
       event: {
         _id: event._id,
         name: event.name,
@@ -52,9 +64,14 @@ router.post('/create', verifyToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error creating event:', error);
+    console.error('Error creating/updating event:', error);
+    if (error.code === 11000 && error.keyPattern?.name) {
+      return res.status(400).json({ 
+        error: 'An event with this name already exists' 
+      });
+    }
     res.status(400).json({ 
-      error: error.message || 'Failed to create event',
+      error: error.message || 'Failed to create/update event',
       details: error.errors
     });
   }
@@ -105,6 +122,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/my-events', verifyToken, async (req, res) => {
+  try {
+    const events = await Event.find({
+      $or: [
+        { createdBy: req.user.userId },
+        { attendees: req.user.userId }
+      ]
+    }).sort({ date: 1 });
+
+    res.json({
+      created: events.filter(event => event.createdBy.toString() === req.user.userId),
+      registered: events.filter(event => event.attendees.includes(req.user.userId))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
@@ -149,9 +184,18 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: Date.now() },
+      { 
+        ...req.body,
+        updatedAt: Date.now()
+      },
       { new: true, runValidators: true }
     );
+
+    const io = req.app.get('io');
+    io.emit('eventUpdated', {
+      eventId: updatedEvent._id,
+      updates: req.body
+    });
 
     res.json(updatedEvent);
   } catch (error) {

@@ -7,4 +7,5 @@ export default [
   route("/feed", "routes/feed.tsx"),
   route("/events/create", "routes/events/create.tsx"),
   route("/events/:id", "routes/events/[id].tsx"),
+  route("/my-events", "routes/events/my-events.tsx"),
 ] satisfies RouteConfig;

@@ -45,7 +45,6 @@ export default function FeedPage() {
         withCredentials: true
       });
       setEvents(data.events);
-      console.log(data.events);
       filterEvents(data.events, filter);
       const userRegistrations = new Set(
         user?._id
@@ -101,7 +100,6 @@ export default function FeedPage() {
     });
 
     socket.on('connect', () => {
-      console.log('Connected to socket server:', socket.id);
       events.forEach(event => {
         socket.emit('joinEvent', event._id);
       });
@@ -154,7 +152,7 @@ export default function FeedPage() {
         [eventId]: data.attendeeCount
       }));
       setRegisteredEvents(prev => new Set([...prev, eventId]));
-      setError(''); // Clear any existing errors
+      setError('');
     } catch (error) {
       const axiosError = error as AxiosError<APIError>;
       if (axiosError.response?.status === 401) {
