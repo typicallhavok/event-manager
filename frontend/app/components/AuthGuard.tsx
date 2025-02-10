@@ -12,8 +12,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             const publicPaths = ['/', '/login', '/register','/feed'];
             const isPublicPath = publicPaths.includes(location.pathname);
 
-            if (user && isPublicPath) {
-                navigate('/dashboard');
+            if (user && isPublicPath && location.pathname !== '/feed') {
+                navigate('/feed');
             } else if (!user && !isPublicPath) {
                 navigate('/login');
             }

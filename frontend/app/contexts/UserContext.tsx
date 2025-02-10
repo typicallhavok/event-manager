@@ -15,12 +15,14 @@ interface UserContextType {
     user: User | null;
     setUser: (user: User | null) => void;
     loading: boolean;
+    logout: () => Promise<void>;
 }
 
 const defaultContextValue: UserContextType = {
     user: null,
     setUser: () => { },
     loading: true,
+    logout: async () => { },
 };
 
 export const UserContext = createContext<UserContextType>(defaultContextValue);
@@ -32,6 +34,18 @@ interface UserContextProviderProps {
 export function UserContextProvider({ children }: UserContextProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const logout = async () => {
+        try {
+            await axios.post(`${BACKEND_URL}/auth/logout`, {}, {
+                withCredentials: true
+            });
+            setUser(null);
+        } catch (error) {
+            console.error('Logout failed:', error);
+            throw error;
+        }
+    };
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -53,7 +67,7 @@ export function UserContextProvider({ children }: UserContextProviderProps) {
     }, []);
 
     return (
-        <UserContext.Provider value={{ user, setUser, loading }}>
+        <UserContext.Provider value={{ user, setUser, loading, logout }}>
             {children}
         </UserContext.Provider>
     );

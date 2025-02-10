@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../contexts/UserContext';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { format, isFuture, isPast } from 'date-fns';
+import type { Event, APIError, EventResponse, EventRegistrationResponse } from '../types';
+import { AxiosError } from 'axios';
 
 const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead',
@@ -15,31 +18,11 @@ const getRandomImage = () => DEFAULT_IMAGES[Math.floor(Math.random() * DEFAULT_I
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
-interface Event {
-  _id: string;
-  name: string;
-  subtitle?: string;
-  description: string;
-  date: string;
-  time: {
-    from: string;
-    to: string;
-  };
-  venue: {
-    name: string;
-    city: string;
-  };
-  attendees: string[];
-  images: Array<{
-    url: string;
-    alt?: string;
-    isFeatured: boolean;
-  }>;
-}
-
 type FilterType = 'upcoming' | 'past' | 'all';
 
 export default function FeedPage() {
+  const { user } = useContext(UserContext);
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [filter, setFilter] = useState<FilterType>('upcoming');
@@ -51,20 +34,31 @@ export default function FeedPage() {
   const [error, setError] = useState('');
   const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
   const [socket, setSocket] = useState<any>(null);
+  const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
 
   const fetchEvents = async () => {
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/events`, {
+      const { data } = await axios.get<EventResponse>(`${BACKEND_URL}/events`, {
         params: {
           date: new Date().toISOString()
-        }
+        },
+        withCredentials: true
       });
-      console.log('Received events data:', data);
       setEvents(data.events);
+      console.log(data.events);
       filterEvents(data.events, filter);
-    } catch (error: any) {
-      console.error('Full error details:', error.response?.data || error);
-      setError('Failed to load events');
+      const userRegistrations = new Set(
+        user?._id
+          ? data.events
+              .filter(event => event.attendees.includes(user._id))
+              .map(event => event._id)
+          : []
+      );
+      setRegisteredEvents(userRegistrations);
+      setError(''); // Clear any existing errors
+    } catch (error) {
+      const axiosError = error as AxiosError<APIError>;
+      setError(axiosError.response?.data?.error || 'Failed to load events');
     } finally {
       setLoading(false);
     }
@@ -138,20 +132,41 @@ export default function FeedPage() {
   }, [events]);
 
   const registerForEvent = async (eventId: string) => {
-
+    if (!user) {
+      navigate('/register', {
+        state: {
+          redirectTo: `/events/${eventId}`,
+          message: 'Please register or login to sign up for events'
+        }
+      });
+      return;
+    }
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/events/${eventId}/register`,{
-        withCredentials: true
-      });
-      console.log('Registration successful:', response.data);
+      const { data } = await axios.post<EventRegistrationResponse>(
+        `${BACKEND_URL}/events/${eventId}/register`,
+        {},
+        { withCredentials: true }
+      );
 
       setAttendeeCounts(prev => ({
         ...prev,
-        [eventId]: response.data.attendeeCount
+        [eventId]: data.attendeeCount
       }));
+      setRegisteredEvents(prev => new Set([...prev, eventId]));
+      setError(''); // Clear any existing errors
     } catch (error) {
-      console.error('Registration failed:', error);
+      const axiosError = error as AxiosError<APIError>;
+      if (axiosError.response?.status === 401) {
+        navigate('/login', {
+          state: {
+            redirectTo: `/events/${eventId}`,
+            message: 'Your session has expired. Please login again.'
+          }
+        });
+      } else {
+        setError(axiosError.response?.data?.error || 'Failed to register for event');
+      }
     }
   };
 
@@ -163,20 +178,30 @@ export default function FeedPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[rgb(18,11,26)] flex items-center justify-center">
-        <div className="text-white text-xl">{error}</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[rgb(18,11,26)] p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+            <p className="text-red-400">{error}</p>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white">Events</h1>
-
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Events</h1>
+            {user && (
+              <Link
+                to="/events/create"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-medium">Create Event</span>
+              </Link>
+            )}
+          </div>
+          
           <div className="flex flex-wrap gap-4 mt-4 sm:mt-0">
             <div className="flex rounded-lg overflow-hidden bg-white/10">
               {(['upcoming', 'past', 'all'] as const).map((type) => (
@@ -288,13 +313,34 @@ export default function FeedPage() {
                     </div>
 
                     <button
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.preventDefault();
-                        registerForEvent(event._id);
+                        if (!registeredEvents.has(event._id)) {
+                          registerForEvent(event._id);
+                        }
                       }}
-                      className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                      disabled={registeredEvents.has(event._id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        !user
+                          ? 'bg-purple-500/50 hover:bg-purple-500/60 text-white/90'
+                          : registeredEvents.has(event._id)
+                            ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
+                            : 'bg-purple-500 hover:bg-purple-600 text-white'
+                      }`}
                     >
-                      Register
+                      {!user 
+                        ? 'Sign in to Register' 
+                        : registeredEvents.has(event._id)
+                          ? (
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              Registered
+                            </span>
+                          )
+                          : 'Register'
+                      }
                     </button>
                   </div>
                 </div>

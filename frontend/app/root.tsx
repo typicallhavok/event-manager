@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { UserContextProvider } from './contexts/UserContext';
 import { AuthGuard } from './components/AuthGuard';
+import Navbar from './components/Navbar';
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -47,6 +48,7 @@ export default function App() {
   return (
     <UserContextProvider>
       <AuthGuard>
+        <Navbar />
         <Outlet />
       </AuthGuard>
     </UserContextProvider>
@@ -70,14 +72,17 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
+    <>
+      <Navbar />
+      <main className="pt-16 p-4 container mx-auto">
+        <h1 className="text-2xl font-bold text-red-500">{message}</h1>
+        <p className="text-gray-600 mt-2">{details}</p>
+        {stack && (
+          <pre className="w-full p-4 mt-4 bg-gray-100 rounded-lg overflow-x-auto">
+            <code className="text-sm">{stack}</code>
+          </pre>
+        )}
+      </main>
+    </>
   );
 }

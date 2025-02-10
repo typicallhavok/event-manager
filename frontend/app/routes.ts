@@ -5,4 +5,6 @@ export default [
   route("/login", "routes/login.tsx"),
   route("/register", "routes/register.tsx"),
   route("/feed", "routes/feed.tsx"),
+  route("/events/create", "routes/events/create.tsx"),
+  route("/events/:id", "routes/events/[id].tsx"),
 ] satisfies RouteConfig;
