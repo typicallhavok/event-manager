@@ -6,6 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { useLocation } from 'react-router-dom';
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -44,11 +45,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Add this function to check if navbar should be hidden
+const shouldHideNavbar = (pathname: string): boolean => {
+  const hiddenPaths = ['/', '/login', '/register'];
+  return hiddenPaths.includes(pathname);
+};
+
 export default function App() {
+  const location = useLocation();
+
   return (
     <UserContextProvider>
       <AuthGuard>
-        <Navbar />
+        {!shouldHideNavbar(location.pathname) && <Navbar />}
         <Outlet />
       </AuthGuard>
     </UserContextProvider>
@@ -56,6 +65,7 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const location = useLocation();
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
@@ -73,7 +83,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   return (
     <>
-      <Navbar />
+      {!shouldHideNavbar(location.pathname) && <Navbar />}
       <main className="pt-16 p-4 container mx-auto">
         <h1 className="text-2xl font-bold text-red-500">{message}</h1>
         <p className="text-gray-600 mt-2">{details}</p>
