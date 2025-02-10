@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/* Add this at the top of the file */
+:root {
+  /* Primary Colors */
+  --primary-dark: #000000;
+  --primary-purple: #581C87;  /* purple-900 */
+  --primary-light: #ffffff;
+
+  /* Accent Colors */
+  --accent-pink: #EC4899;     /* pink-500 */
+  --accent-purple: #9333EA;   /* purple-600 */
+  --accent-orange: #F97316;   /* orange-500 */
+
+  /* Gradient Colors */
+  --gradient-purple-start: #581C87;  /* purple-900 */
+  --gradient-purple-end: #7E22CE;    /* purple-700 */
+  
+  /* Transparency Values */
+  --transparency-low: 0.2;
+  --transparency-medium: 0.3;
+  --transparency-high: 0.9;
+}
+
+/* Existing code... */
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+  background: var(--primary-dark);
+}
+
+.glow {
+  font-family: trend;
+  text-shadow: 0 0 2px #ff9ff2, 0 0 20px rgb(255, 145, 255), 0 0 20px rgba(255, 255, 255);
+}
+
+
+/* Update your existing animations... */
+
+/* Utility classes for the new color palette */
+.bg-gradient-primary {
+  background: linear-gradient(
+    to bottom right,
+    var(--gradient-purple-start),
+    var(--gradient-purple-end)
+  );
+}
+
+.text-accent {
+  color: var(--accent-pink);
+}
+
+.border-accent {
+  border-color: var(--accent-purple);
+}
+
+
+@font-face {
+  font-family: "trend";
+  src: url("/FontsFree-Net-Trend-Sans-W00-Five.ttf");
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
