@@ -2,6 +2,9 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from '../../contexts/UserContext';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 interface Event {
 	_id: string;
@@ -31,6 +34,8 @@ const EventDetailPage: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string>('');
 	const [isRegistered, setIsRegistered] = useState(false);
+	const [attendeeCount, setAttendeeCount] = useState<number>(0);
+	const [socket, setSocket] = useState<any>(null);
 
 	const handleRegistration = async () => {
 		if (!user) {
@@ -95,6 +100,7 @@ const EventDetailPage: React.FC = () => {
 				]);
 
 				setEvent(eventResponse.data);
+				setAttendeeCount(eventResponse.data.attendees.length);
 				setIsRegistered(registrationResponse.data.isRegistered);
 				setError('');
 			} catch (err) {
@@ -110,6 +116,44 @@ const EventDetailPage: React.FC = () => {
 
 		fetchEvent();
 	}, [id, user]);
+
+	useEffect(() => {
+		if (!event?._id) return;
+
+		let isMounted = true;
+		const socket = io(SOCKET_URL, {
+			path: '/socket.io/',
+			transports: ['websocket', 'polling'],
+			reconnectionAttempts: 5,
+			reconnectionDelay: 1000,
+			timeout: 10000,
+			withCredentials: true
+		});
+
+		socket.on('connect', () => {
+			socket.emit('joinEvent', event._id);
+		});
+
+		socket.on('attendeeUpdate', ({ eventId, count }) => {
+			if (isMounted && eventId === event._id) {
+				setAttendeeCount(count);
+			}
+		});
+
+		socket.on('connect_error', (error) => {
+			console.error('Socket connection error:', error);
+		});
+
+		setSocket(socket);
+
+		return () => {
+			isMounted = false;
+			if (socket.connected) {
+				socket.emit('leaveEvent', event._id);
+				socket.disconnect();
+			}
+		};
+	}, [event?._id]);
 
 	if (loading) {
 		return (
@@ -200,7 +244,7 @@ const EventDetailPage: React.FC = () => {
 									<path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
 								</svg>
 								<span className="text-gray-400">
-									{event.attendees.length} {event.attendees.length === 1 ? 'attendee' : 'attendees'}
+									{attendeeCount} {attendeeCount === 1 ? 'attendee' : 'attendees'}
 								</span>
 							</div>
 							<div className={`px-3 py-1 rounded-full text-sm ${isRegistered ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'
