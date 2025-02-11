@@ -47,6 +47,7 @@ app.use(cors({
 }));
 
 app.get('/api/health', (req, res) => {
+  console.log('Health check');
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
