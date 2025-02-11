@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const IndexPage = () => {
+
+  // Send a request to the backend to wake it up
+  useEffect(() => {
+    axios.get(`${import.meta.env.BACKEND_URL}/health`);
+  }, []);
+
   return (
     <div className="min-h-screen bg-black flex flex-col relative overflow-hidden p-4 sm:p-8">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-950/90 to-black pointer-events-none"></div>
